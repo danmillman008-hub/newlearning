@@ -11,6 +11,10 @@ keys by default, deterministic (same input = byte-identical output).
   learn session with local validators, BKT mastery, DSR scheduling, flow
   control, and xAPI telemetry. See `docs/M2_PRD.md`,
   `docs/M2_ARCHITECTURE.md`, `M2-REPORT.md`.
+- **M3** (`gramophone_m3/`): chapter v1s → namespaced book graph, plus
+  live play (stdin or scripted attempts) with retry cap and save/resume.
+  Reuses M1+M2 only. See `docs/M3_PRD.md`, `docs/M3_ARCHITECTURE.md`,
+  `M3-REPORT.md`.
 
 LLM access goes through one interface (`gramophone_m1.llm_client`):
 `MockLLM` (deterministic cassettes, default, offline) and `GeminiFlashLLM`
@@ -29,7 +33,12 @@ gramophone-m2 author out/m1/knowledge-graph.json --out out/m2
 gramophone-m2 learn fixtures/sample_beats.json --script fixtures/sample_script.json --out out/m2
 gramophone-m2 export-xapi out/m2/xapi.jsonl --out out/m2/export.jsonl
 
-# Full suite (96 tests, M1+M2)
+# M3: merge chapters, then play live (or scripted)
+gramophone-m3 merge out/ch1/knowledge-graph.json out/ch2/knowledge-graph.json --out out/book --names ch1 ch2
+gramophone-m3 play out/m2/beats.json --script fixtures/sample_script.json --out out/play
+echo "q1|q1-check|Mean" | gramophone-m3 play out/m2/beats.json --out out/live
+
+# Full suite (116 tests, M1+M2+M3)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
