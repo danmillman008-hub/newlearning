@@ -33,7 +33,7 @@ STATE_KEYS = (
 
 def parse_attempt_line(line: str) -> dict:
     """Parse one 'beat|check|response' line (response: JSON or raw string)."""
-    parts = line.split("|")
+    parts = line.split("|", 2)  # responses may themselves contain pipes
     if len(parts) != 3 or not parts[0].strip() or not parts[1].strip():
         raise ValueError(f"bad attempt line (want beat|check|response): {line!r}")
     raw = parts[2].strip()
@@ -65,6 +65,21 @@ def load_state(path: str) -> dict:
     missing = [k for k in STATE_KEYS if k not in state]
     if missing:
         raise ValueError(f"state missing keys: {missing}")
+    run = state["run"]
+    key = run.get("key") if isinstance(run, dict) else None
+    key_ok = key is None or (
+        isinstance(key, list)
+        and len(key) == 2
+        and all(isinstance(k, str) for k in key)
+    )
+    len_ok = (
+        isinstance(run, dict)
+        and not isinstance(run.get("len"), bool)
+        and isinstance(run.get("len"), int)
+        and run["len"] >= 0
+    )
+    if not (isinstance(run, dict) and key_ok and len_ok and isinstance(run.get("first_fail"), bool)):
+        raise ValueError("state has a bad run block")
     return state
 
 
@@ -81,6 +96,8 @@ def play_session(
     beats_data must already be validated (pipeline does this). store is an
     optional gramophone_m2.xapi.XAPIStore (statements counted regardless).
     """
+    if isinstance(max_retries, bool) or not isinstance(max_retries, int) or max_retries < 0:
+        raise ValueError(f"play: max_retries must be an int >= 0, got {max_retries!r}")
     by_beat = {b["id"]: b for b in beats_data["beats"]}
     by_check = {c["id"]: c for c in beats_data["checks"]}
 

@@ -122,6 +122,32 @@ def test_cli_play_golden_and_stdin(tmp_path, capsys, monkeypatch):
     assert cli.main(["play", str(tmp_path / "nope.json"), "--out", out]) == 2
 
 
+def test_response_may_contain_pipes():
+    att = live.parse_attempt_line("q1|q1-check|a|b")
+    assert att == {"beat_id": "q1", "check_id": "q1-check", "response": "a|b"}
+
+
+def test_bad_max_retries_rejected(tmp_path):
+    from gramophone_m2 import xapi
+
+    store = xapi.XAPIStore(str(tmp_path / "x.jsonl"))
+    with pytest.raises(ValueError):
+        live.play_session(_beats(), [], max_retries=-1, store=store)
+    with pytest.raises(ValueError):
+        live.play_session(_beats(), [], max_retries="1", store=store)
+
+
+def test_garbage_run_block_rejected(tmp_path):
+    from gramophone_m2 import xapi
+
+    _, state = live.play_session(_beats(), [], store=xapi.XAPIStore(str(tmp_path / "x.jsonl")))
+    state["run"] = {"key": "xx", "len": "n", "first_fail": "maybe"}
+    bad = tmp_path / "bad.json"
+    live.save_state(state, str(bad))
+    with pytest.raises(ValueError, match="bad run block"):
+        live.load_state(str(bad))
+
+
 def test_no_network(tmp_path, monkeypatch):
     real_socket = socket.socket
 
