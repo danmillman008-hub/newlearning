@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gramophone"
+version = "0.3.0"
+description = "Local-first textbook-to-quest engine: M1 knowledge graph, M2 story engine, M3 scale plus live play"
+requires-python = ">=3.11"
+dependencies = ["pypdf>=4"]
+
+[project.scripts]
+gramophone-m1 = "gramophone_m1.cli:main"
+gramophone-m2 = "gramophone_m2.cli:main"
+gramophone-m3 = "gramophone_m3.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["gramophone_m1*", "gramophone_m2*", "gramophone_m3*"]
