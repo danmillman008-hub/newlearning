@@ -78,11 +78,21 @@ def run_quest(
     restore: dict | None = None,
     store=None,
 ) -> tuple[dict, dict, list[dict]]:
-    """Run an adaptive quest. Returns (session, end_state, transcript)."""
+    """Run an adaptive quest. Returns (session, end_state, transcript).
+
+    Responses are positional: a save/resume split inside a check's retry
+    window rebinds the leftover retry response to the next check, so save
+    at retry-clean boundaries for an exact resume.
+    """
     if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
         raise ValueError(f"quest: max_steps must be an int >= 1, got {max_steps!r}")
     if isinstance(max_retries, bool) or not isinstance(max_retries, int) or max_retries < 0:
         raise ValueError(f"quest: max_retries must be an int >= 0, got {max_retries!r}")
+    if not isinstance(responses, (list, tuple)):
+        raise ValueError(
+            "quest: responses must be a list, "
+            f"got {type(responses).__name__}"
+        )
     item_ids, edges = _check_v1(v1_graph)
     by_beat = {b["id"]: b for b in beats_data["beats"]}
     by_check = {c["id"]: c for c in beats_data["checks"]}

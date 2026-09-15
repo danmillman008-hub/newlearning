@@ -137,6 +137,11 @@ def test_bad_inputs_rejected(tmp_path):
         adaptive.run_quest(_beats(), _graph(), [], max_steps=0, store=store)
     with pytest.raises(ValueError):
         adaptive.run_quest(_beats(), _graph(), [], max_retries=-1, store=store)
+    with pytest.raises(ValueError, match="must be a list"):
+        adaptive.run_quest(_beats(), _graph(), "Mean", store=store)
+    session, _, _ = adaptive.run_quest(
+        _beats(), _graph(), ("Mean",), store=xapi.XAPIStore(str(tmp_path / "t.jsonl")))
+    assert session["beats_visited"] == ["q1"]
     with pytest.raises(ValueError):
         pipeline.run_quest_file(BEATS, GRAPH, str(tmp_path), responses_path=RESPONSES,
                                 response_lines=["x"])
