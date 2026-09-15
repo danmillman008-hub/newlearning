@@ -15,6 +15,11 @@ keys by default, deterministic (same input = byte-identical output).
   live play (stdin or scripted attempts) with retry cap and save/resume.
   Reuses M1+M2 only. See `docs/M3_PRD.md`, `docs/M3_ARCHITECTURE.md`,
   `M3-REPORT.md`.
+- **M4** (`gramophone_m4/`): adaptive quest play — next-beat policy loop
+  (mastered → fringe → `next_beat`) grading each step through M3 with
+  transcript + completion reasons + save/resume. Reuses M1+M2+M3 only
+  (zero modification). See `docs/M4_PRD.md`,
+  `docs/M4_ARCHITECTURE.md`, `M4-REPORT.md`.
 
 LLM access goes through one interface (`gramophone_m1.llm_client`):
 `MockLLM` (deterministic cassettes, default, offline) and `GeminiFlashLLM`
@@ -38,7 +43,10 @@ gramophone-m3 merge out/ch1/knowledge-graph.json out/ch2/knowledge-graph.json --
 gramophone-m3 play out/m2/beats.json --script fixtures/sample_script.json --out out/play
 echo "q1|q1-check|Mean" | gramophone-m3 play out/m2/beats.json --out out/live
 
-# Full suite (116 tests, M1+M2+M3)
+# M4: adaptive quest (golden: VISITED=8 COMPLETION=quest_complete)
+gramophone-m4 play fixtures/sample_beats.json --graph fixtures/fringe_graph.json --responses fixtures/m4_responses.txt --out out/quest
+
+# Full suite (125 tests, M1+M2+M3+M4)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
