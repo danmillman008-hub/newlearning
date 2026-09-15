@@ -124,6 +124,7 @@ def author_beats(v1: dict, llm=None, budget: int | None = None) -> tuple[dict, d
             "checks_unknown_item": 0,
             "dangling_choices": 0,
             "unknown_check_refs": 0,
+            "unknown_kind": 0,
             "duplicate_ids": 0,
         },
     }
@@ -295,10 +296,14 @@ def _ground_draft(
         if check.get("item_id") not in by_id:
             pruned["checks_unknown_item"] += 1
             continue
+        kind = str(check.get("kind", "choice"))
+        if kind not in ("choice", "ordering", "numeric"):
+            pruned["unknown_kind"] += 1
+            continue
         checks.append(
             {
                 "id": check["id"],
-                "kind": str(check.get("kind", "choice")),
+                "kind": kind,
                 "prompt": str(check.get("prompt", "")),
                 "payload": check.get("payload", {}),
                 "item_id": check["item_id"],

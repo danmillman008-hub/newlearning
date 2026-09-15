@@ -86,6 +86,7 @@ def next_beat(
 
     rate = flow.rate() if flow else 1.0
     in_band = flow.in_band() if flow else True
+    hi = flow.hi if flow is not None else FLOW_HI
 
     best: dict | None = None
     best_key: tuple | None = None
@@ -103,7 +104,7 @@ def next_beat(
         score = (2.0 if set(teaches) & fringe else 0.0) + (1.0 - avg_mastery)
         if not in_band:
             difficulty = float(beat.get("difficulty", 2))
-            score += 0.25 * difficulty if rate > FLOW_HI else -0.25 * difficulty
+            score += 0.25 * difficulty if rate > hi else -0.25 * difficulty
         key = (round(score, 9),)  # ids already sorted: first max wins
         if best_key is None or key > best_key:
             best_key = key

@@ -61,6 +61,14 @@ def test_next_beat_flow_steers_difficulty():
     assert adapt.next_beat(beats, set(), {}, set(), flow2)["id"] == "easy"
 
 
+def test_next_beat_honors_custom_band():
+    beats = [_beat("easy", teaches=["i1"], difficulty=1), _beat("hard", teaches=["i2"], difficulty=4)]
+    flow = adapt.FlowTracker(window=10, lo=0.5, hi=0.6)
+    for r in [True] * 7 + [False] * 3:  # rate 0.7: above band -> harder
+        flow.update(r)
+    assert adapt.next_beat(beats, set(), {}, set(), flow)["id"] == "hard"
+
+
 def test_flow_tracker_ratio():
     flow = adapt.FlowTracker()
     assert flow.ratio() == 1.0

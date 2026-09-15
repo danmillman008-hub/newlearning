@@ -66,6 +66,13 @@ def test_unreachable_beat_reported_not_dropped():
     assert any("no entry beat" in i for i in issues)
 
 
+def test_unknown_check_kind_reported():
+    bad = _check("c1")
+    bad["kind"] = "essay"
+    issues = story_model.validate({"beats": [_beat("b1", checks=["c1"])], "checks": [bad]})
+    assert any("unknown kind" in i and "essay" in i for i in issues)
+
+
 def test_missing_keys_reported():
     issues = story_model.validate({"beats": [{"id": "b1"}], "checks": [{}]})
     assert any("missing key" in i for i in issues)

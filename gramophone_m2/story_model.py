@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 
+from .validators import KNOWN_KINDS
+
 REQUIRED_BEAT_KEYS = (
     "id",
     "title",
@@ -80,6 +82,8 @@ def validate(data: dict) -> list[str]:
         for key in REQUIRED_CHECK_KEYS:
             if key not in check:
                 issues.append(f"{where}: missing key {key!r}")
+        if check.get("kind") not in KNOWN_KINDS:
+            issues.append(f"{where}: unknown kind {check.get('kind')!r}")
         cid = check.get("id")
         if cid in check_ids:
             issues.append(f"{where}: duplicate check id {cid!r}")

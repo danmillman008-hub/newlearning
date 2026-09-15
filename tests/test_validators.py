@@ -48,3 +48,19 @@ def test_numeric_tolerance():
 def test_unknown_kind_raises():
     with pytest.raises(ValueError):
         validators.grade({"kind": "essay", "payload": {}}, "x")
+
+
+def test_ordering_with_duplicates_is_stable():
+    check = {
+        "kind": "ordering",
+        "max_score": 2,
+        "payload": {"items": ["a", "a", "b"], "answer": ["a", "a", "b"]},
+    }
+    assert validators.grade(check, ["a", "a", "b"])["success"] is True
+    # order ranks [0,2,1]: one inversion -> frac 2/3
+    partial = validators.grade(check, ["a", "b", "a"])
+    assert partial["score"] == pytest.approx(4 / 3, abs=1e-3)
+    # order ranks [2,0,1]: two inversions -> frac 1/3
+    assert validators.grade(check, ["b", "a", "a"])["score"] == pytest.approx(
+        2 / 3, abs=1e-3
+    )

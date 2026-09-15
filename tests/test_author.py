@@ -160,6 +160,37 @@ def test_empty_v1_rejected():
         author.author_beats({"items": []}, llm=None)
 
 
+def test_unknown_kind_check_pruned():
+    draft = {
+        "beats": [
+            {
+                "id": "a1",
+                "title": "A",
+                "text": "t",
+                "choices": [],
+                "requires": [],
+                "teaches": ["alpha"],
+                "checks": ["e1"],
+                "provenance": {"item_id": "alpha", "chunk_id": "c"},
+            }
+        ],
+        "checks": [
+            {
+                "id": "e1",
+                "kind": "essay",
+                "prompt": "Write!",
+                "payload": {},
+                "item_id": "alpha",
+                "max_score": 5,
+            }
+        ],
+    }
+    cassette = {"STORY": [{"text": json.dumps(draft), "tokens": 10}]}
+    data, info = author.author_beats(_v1(), MockLLM(cassette))
+    assert info["pruned"]["unknown_kind"] == 2  # essay draft cycles to both clusters
+    assert all(c["kind"] in ("choice", "ordering", "numeric") for c in data["checks"])
+
+
 def test_deterministic():
     first, _ = author.author_beats(_v1(), MockLLM(_story_cassette()))
     second, _ = author.author_beats(_v1(), MockLLM(_story_cassette()))

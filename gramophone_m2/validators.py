@@ -14,9 +14,12 @@ Kinds:
 
 from __future__ import annotations
 
+from collections import deque
+
 CHOICE = "choice"
 ORDERING = "ordering"
 NUMERIC = "numeric"
+KNOWN_KINDS = (CHOICE, ORDERING, NUMERIC)
 
 
 def grade(check: dict, response) -> dict:
@@ -52,8 +55,12 @@ def _ordering_fraction(answer: list, response) -> float:
     n = len(answer)
     if n < 2:
         return 1.0
-    rank = {str(v): i for i, v in enumerate(answer)}
-    order = [rank[str(v)] for v in response]
+    # Occurrence queues: duplicates map to answer indices in order, so ties
+    # get stable ranks instead of collapsing onto one index.
+    queues: dict[str, deque] = {}
+    for i, v in enumerate(answer):
+        queues.setdefault(str(v), deque()).append(i)
+    order = [queues[str(v)].popleft() for v in response]
     inversions = 0
     for i in range(n):
         for j in range(i + 1, n):
