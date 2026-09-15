@@ -1,0 +1,6 @@
+Mean
+5.0
+["sort", "pick-middle", "count"]
+["sort", "count", "pick-middle"]
+Spread
+2.05
