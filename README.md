@@ -25,6 +25,10 @@ keys by default, deterministic (same input = byte-identical output).
   `gramophone` CLI (`gramophone {m1|m2|m3|m4|quest}`). Pure orchestration
   over M2+M3+M4 (zero modification). See `docs/M5_PRD.md`,
   `docs/M5_ARCHITECTURE.md`, `M5-REPORT.md`.
+- **M6** (`gramophone_m6/`): full chain — raw chapters (Markdown/PDF) →
+  quest in one `gramophone-m6` command. Pure orchestration over M1+M5
+  (zero modification). See `docs/M6_PRD.md`,
+  `docs/M6_ARCHITECTURE.md`, `M6-REPORT.md`.
 
 LLM access goes through one interface (`gramophone_m1.llm_client`):
 `MockLLM` (deterministic cassettes, default, offline) and `GeminiFlashLLM`
@@ -55,7 +59,10 @@ gramophone-m4 play fixtures/sample_beats.json --graph fixtures/fringe_graph.json
 gramophone-m5 fixtures/chapter_a.json fixtures/chapter_b.json --responses fixtures/m5_responses.txt --out out/quest
 gramophone quest fixtures/chapter_a.json fixtures/chapter_b.json --responses fixtures/m5_responses.txt --out out/quest2
 
-# Full suite (132 tests, M1+M2+M3+M4+M5)
+# M6: raw chapter -> quest, the whole product in one command
+gramophone-m6 fixtures/sample_chapter.md --responses fixtures/m6_responses.txt --out out/full
+
+# Full suite (138 tests, M1+M2+M3+M4+M5+M6)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
