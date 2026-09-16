@@ -33,6 +33,12 @@ keys by default, deterministic (same input = byte-identical output).
   safe), `gramophone m6` unified route, and a test-verified
   `TUTORIAL.md`. See `docs/M7_PRD.md`, `docs/M7_ARCHITECTURE.md`,
   `M7-REPORT.md`.
+- **M8** (Flash live): the Gemini backend goes live behind
+  `--llm flash` on `m2 author`, `m5 quest`, and `m6` (transient-error
+  retry, fail-fast keyless error); Mock stays the offline default and
+  the suite makes zero live calls. See `docs/M8_PRD.md`,
+  `docs/M8_ARCHITECTURE.md`, `M8-REPORT.md` (live quest: 6 requests,
+  13468 tokens, `quest_complete`).
 
 New here? Start with **TUTORIAL.md** — first quest in 5 minutes.
 
@@ -68,7 +74,7 @@ gramophone quest fixtures/chapter_a.json fixtures/chapter_b.json --responses fix
 # M6: raw chapter -> quest, the whole product in one command
 gramophone-m6 fixtures/sample_chapter.md --responses fixtures/m6_responses.txt --out out/full
 
-# Full suite (144 tests, M1-M7)
+# Full suite (156 tests, M1-M8)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
