@@ -20,6 +20,11 @@ keys by default, deterministic (same input = byte-identical output).
   transcript + completion reasons + save/resume. Reuses M1+M2+M3 only
   (zero modification). See `docs/M4_PRD.md`,
   `docs/M4_ARCHITECTURE.md`, `M4-REPORT.md`.
+- **M5** (`gramophone_m5/`): book quest — chapters → merged book graph →
+  authored beats → adaptive quest in one command, plus the unified
+  `gramophone` CLI (`gramophone {m1|m2|m3|m4|quest}`). Pure orchestration
+  over M2+M3+M4 (zero modification). See `docs/M5_PRD.md`,
+  `docs/M5_ARCHITECTURE.md`, `M5-REPORT.md`.
 
 LLM access goes through one interface (`gramophone_m1.llm_client`):
 `MockLLM` (deterministic cassettes, default, offline) and `GeminiFlashLLM`
@@ -46,7 +51,11 @@ echo "q1|q1-check|Mean" | gramophone-m3 play out/m2/beats.json --out out/live
 # M4: adaptive quest (golden: VISITED=8 COMPLETION=quest_complete)
 gramophone-m4 play fixtures/sample_beats.json --graph fixtures/fringe_graph.json --responses fixtures/m4_responses.txt --out out/quest
 
-# Full suite (125 tests, M1+M2+M3+M4)
+# M5: book quest end-to-end (chapters -> quest) + unified CLI
+gramophone-m5 fixtures/chapter_a.json fixtures/chapter_b.json --responses fixtures/m5_responses.txt --out out/quest
+gramophone quest fixtures/chapter_a.json fixtures/chapter_b.json --responses fixtures/m5_responses.txt --out out/quest2
+
+# Full suite (132 tests, M1+M2+M3+M4+M5)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
