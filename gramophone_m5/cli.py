@@ -11,6 +11,7 @@ import json
 import sys
 
 from gramophone_m1.cli import main as _m1
+from gramophone_m1.llm_client import flash_llm_or_raise
 from gramophone_m2.cli import main as _m2
 from gramophone_m3.cli import main as _m3
 from gramophone_m4.cli import main as _m4
@@ -33,6 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--actor", default="learner")
     parser.add_argument("--max-retries", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=1000)
+    parser.add_argument("--llm", choices=["mock", "flash"], default="mock")
     return parser
 
 
@@ -55,10 +57,11 @@ def quest_main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         lines = None if args.responses is not None else _read_stdin_lines()
+        llm = None if args.llm == "mock" else flash_llm_or_raise()
         session = bookquest.run_book_quest(
             args.chapters, args.out, args.responses, lines, args.names,
             args.save, args.resume, args.actor,
-            args.max_retries, args.max_steps,
+            args.max_retries, args.max_steps, llm,
         )
         with open(f"{args.out}/book-graph.json", encoding="utf-8") as f:
             book = json.load(f)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gramophone"
-version = "0.7.0"
+version = "0.8.0"
 description = "Local-first textbook-to-quest engine: M1 graph, M2 story, M3 scale+play, M4 adaptive quests, M5 book quest, M6 full chain"
 requires-python = ">=3.11"
 dependencies = ["pypdf>=4"]

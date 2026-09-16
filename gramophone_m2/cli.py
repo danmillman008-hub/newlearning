@@ -12,7 +12,7 @@ import os
 import sys
 import traceback
 
-from gramophone_m1.llm_client import MockLLM
+from gramophone_m1.llm_client import MockLLM, flash_llm_or_raise
 
 from . import pipeline, xapi
 
@@ -40,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     auth = sub.add_parser("author", help="author beats from a v1 graph")
     auth.add_argument("graph", help="input knowledge-graph.json v1")
     auth.add_argument("--out", required=True, help="output directory")
-    auth.add_argument("--llm", choices=["mock", "none"], default="mock")
+    auth.add_argument("--llm", choices=["mock", "none", "flash"], default="mock")
     auth.add_argument("--cassette", default=None, help="STORY cassette path")
     auth.add_argument("--token-budget", type=int, default=None)
     learn = sub.add_parser("learn", help="replay a scripted session")
@@ -57,7 +57,12 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.cmd == "author":
-            llm = default_llm(args.cassette) if args.llm == "mock" else None
+            if args.llm == "mock":
+                llm = default_llm(args.cassette)
+            elif args.llm == "flash":
+                llm = flash_llm_or_raise()
+            else:
+                llm = None
             report = pipeline.run_author(args.graph, args.out, llm, args.token_budget)
             pruned = sum(report["pruned"].values())
             print(

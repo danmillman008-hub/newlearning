@@ -10,6 +10,8 @@ import argparse
 import json
 import sys
 
+from gramophone_m1.llm_client import flash_llm_or_raise
+
 from . import fullchain
 
 
@@ -27,6 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--actor", default="learner")
     parser.add_argument("--max-retries", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=1000)
+    parser.add_argument("--llm", choices=["mock", "flash"], default="mock")
     return parser
 
 
@@ -48,11 +51,12 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         lines = None if args.responses is not None else _read_stdin_lines()
+        llm = None if args.llm == "mock" else flash_llm_or_raise()
         result = fullchain.run_full_chain(
             args.chapters, args.out, args.responses, lines, args.names,
             args.save, args.resume, args.actor,
             args.max_retries, args.max_steps,
-            args.max_items, args.token_budget,
+            args.max_items, args.token_budget, llm,
         )
         for counts in result["m1"]:
             print(counts["stdout"])

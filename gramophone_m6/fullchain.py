@@ -31,6 +31,7 @@ def run_full_chain(
     max_steps: int = 1000,
     max_items: int = 300,
     token_budget: int | None = None,
+    llm=None,
 ) -> dict:
     """Run the full chain from raw chapter files. Bad input -> ValueError."""
     if not isinstance(chapter_inputs, (list, tuple)) or not chapter_inputs:
@@ -61,13 +62,13 @@ def run_full_chain(
                 os.path.join(outdir, f"m1_{name}"),
                 max_items,
                 token_budget,
-                llm=default_llm(),
+                llm=llm if llm is not None else default_llm(),
             )
         )
     v1_paths = [counts["v1_path"] for counts in m1s]
     session = run_book_quest(
         v1_paths, outdir, responses_path, response_lines, list(names),
-        save, resume, actor, max_retries, max_steps,
+        save, resume, actor, max_retries, max_steps, llm,
     )
     report_path = os.path.join(outdir, REPORT_NAME)
     section = _chain_report(m1s, session)

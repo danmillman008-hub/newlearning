@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
 
@@ -94,7 +96,7 @@ class MockLLM(LLMClient):
 class GeminiFlashLLM(LLMClient):
     """Google Gemini Flash REST backend (stdlib only, lazy key resolution)."""
 
-    DEFAULT_MODEL = "gemini-3-flash-preview"
+    DEFAULT_MODEL = "gemini-3.5-flash-lite"
     API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
@@ -136,8 +138,26 @@ class GeminiFlashLLM(LLMClient):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.load(resp)
+        data = None
+        last_err: Exception | None = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.load(resp)
+                break
+            except urllib.error.HTTPError as e:
+                # HTTPError IS a URLError subclass: only transient codes
+                # retry; anything else fails fast (raw, as before).
+                if e.code not in (429, 500, 502, 503, 504) or attempt == 2:
+                    raise
+                last_err = e
+            except urllib.error.URLError as e:
+                if attempt == 2:
+                    raise
+                last_err = e
+            time.sleep(2 ** (attempt + 1))  # 2s, then 4s
+        if data is None:  # unreachable: the 3rd failure always raises
+            raise last_err  # type: ignore[misc]
         try:
             text = data["candidates"][0]["content"]["parts"][0].get("text", "")
         except (KeyError, IndexError, TypeError):
@@ -150,3 +170,14 @@ class GeminiFlashLLM(LLMClient):
             )
         self._spent += tokens
         return {"text": text, "tokens": tokens}
+
+
+def flash_llm_or_raise() -> GeminiFlashLLM:
+    """Build the shared Flash backend for ``--llm flash`` CLIs.
+
+    Raises:
+        ValueError: when GEMINI_API_KEY is unset (CLIs map it to exit 2).
+    """
+    if not os.environ.get("GEMINI_API_KEY"):
+        raise ValueError("--llm flash needs GEMINI_API_KEY in the environment")
+    return GeminiFlashLLM()

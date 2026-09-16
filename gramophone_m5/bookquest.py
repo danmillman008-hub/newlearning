@@ -53,6 +53,7 @@ def run_book_quest(
     actor: str = "learner",
     max_retries: int = 1,
     max_steps: int = 1000,
+    llm=None,
 ) -> dict:
     """Run a book quest from chapter v1 files. Bad input -> ValueError."""
     if not isinstance(chapter_paths, (list, tuple)) or not chapter_paths:
@@ -112,7 +113,7 @@ def run_book_quest(
         ):
             raise ValueError("book quest: resume state has bad M5 counters")
     book = merge_graphs(v1s, list(names))
-    beats, info = author_beats(book)
+    beats, info = author_beats(book, llm=llm)
     issues = validate(beats)
     if issues:
         raise RuntimeError(f"internal error: authored beats invalid: {issues}")

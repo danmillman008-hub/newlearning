@@ -72,7 +72,7 @@ def test_gemini_backend_constructible_without_key(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("FLASH_MODEL", raising=False)
     client = GeminiFlashLLM()
-    assert client.model == "gemini-3-flash-preview"
+    assert client.model == "gemini-3.5-flash-lite"
     assert client.total_tokens == 0
     try:
         client.complete("EXTRACT", "hi")
@@ -298,3 +298,103 @@ def test_gemini_exhausted_budget_skips_http_call(monkeypatch):
     else:
         raise AssertionError("expected BudgetExhausted")
     assert client.total_tokens == 0
+
+
+# --- Flash retry (M8, HTTP mocked — still no network) --------------------------
+
+SUCCESS_PAYLOAD = {
+    "candidates": [{"content": {"parts": [{"text": '{"ok": true}'}]}}],
+    "usageMetadata": {"totalTokenCount": 7},
+}
+
+
+class _FakeResp:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _http_error(code):
+    import urllib.error
+
+    return urllib.error.HTTPError("http://x", code, "err", {}, None)
+
+
+def test_gemini_retry_then_success_single_charge(monkeypatch):
+    import urllib.request as urlreq
+
+    from gramophone_m1 import llm_client as lc
+
+    calls = []
+
+    def flaky(req, timeout=60):
+        calls.append(req)
+        if len(calls) < 3:
+            raise _http_error(429)
+        return _FakeResp(SUCCESS_PAYLOAD)
+
+    monkeypatch.setattr(urlreq, "urlopen", flaky)
+    sleeps = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
+    client = lc.GeminiFlashLLM(api_key="KEY")
+    out = client.complete("EXTRACT", "do it")
+    assert out == {"text": '{"ok": true}', "tokens": 7}
+    assert client.total_tokens == 7  # tokens spent only on success
+    assert len(calls) == 3
+    assert sleeps == [2, 4]
+
+
+def test_gemini_retry_gives_up_after_three(monkeypatch):
+    import urllib.error
+    import urllib.request as urlreq
+
+    from gramophone_m1 import llm_client as lc
+
+    calls = []
+
+    def down(req, timeout=60):
+        calls.append(req)
+        raise _http_error(503)
+
+    monkeypatch.setattr(urlreq, "urlopen", down)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    client = lc.GeminiFlashLLM(api_key="KEY")
+    try:
+        client.complete("EXTRACT", "do it")
+    except urllib.error.HTTPError as e:
+        assert e.code == 503
+    else:
+        raise AssertionError("expected HTTPError after 3 tries")
+    assert len(calls) == 3
+    assert client.total_tokens == 0
+
+
+def test_gemini_no_retry_on_client_error(monkeypatch):
+    import urllib.error
+    import urllib.request as urlreq
+
+    from gramophone_m1 import llm_client as lc
+
+    calls = []
+
+    def bad(req, timeout=60):
+        calls.append(req)
+        raise _http_error(400)
+
+    monkeypatch.setattr(urlreq, "urlopen", bad)
+    client = lc.GeminiFlashLLM(api_key="KEY")
+    try:
+        client.complete("EXTRACT", "do it")
+    except urllib.error.HTTPError as e:
+        assert e.code == 400
+    else:
+        raise AssertionError("expected immediate HTTPError")
+    assert len(calls) == 1
