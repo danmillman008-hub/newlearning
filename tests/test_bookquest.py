@@ -148,6 +148,16 @@ def test_bad_inputs_rejected(tmp_path, capsys, monkeypatch):
         bookquest.run_book_quest([CHA], out)
     with pytest.raises(ValueError, match="must be a list"):
         bookquest.run_book_quest([CHA], out, response_lines="Alpha")
+    thin = tmp_path / "thin.json"
+    thin.write_text('{"items": [{"id": "x"}], "surmise": []}', encoding="utf-8")
+    with pytest.raises(ValueError, match="missing"):
+        bookquest.run_book_quest([str(thin)], str(tmp_path / "never"),
+                                 response_lines=[])
+    assert not (tmp_path / "never").exists()  # nothing written on bad input
+    empty = tmp_path / "empty.json"
+    empty.write_text('{"items": [], "surmise": []}', encoding="utf-8")
+    with pytest.raises(ValueError, match="no items"):
+        bookquest.run_book_quest([str(empty)], out, response_lines=[])
     with pytest.raises(SystemExit) as exc:
         cli.quest_main(["--out", out])
     assert exc.value.code == 2

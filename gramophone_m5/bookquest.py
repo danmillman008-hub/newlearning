@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 
-from gramophone_m2.author import author_beats
+from gramophone_m2.author import author_beats, check_v1_items
 from gramophone_m2.story_model import save_beats, validate
 from gramophone_m2.xapi import XAPIStore
 from gramophone_m3.live import load_state, save_state
@@ -58,6 +58,13 @@ def run_book_quest(
     if not isinstance(chapter_paths, (list, tuple)) or not chapter_paths:
         raise ValueError("book quest: need at least one chapter")
     v1s = [_load_chapter(p) for p in chapter_paths]
+    for path, v1 in zip(chapter_paths, v1s):
+        # Run the author's own item gate now, so author-stage input errors
+        # surface before anything is written (not after book-graph.json).
+        try:
+            check_v1_items(v1)
+        except ValueError as e:
+            raise ValueError(f"book quest: {path}: {e}") from e
     if names is None:
         names = [
             os.path.splitext(os.path.basename(p))[0] for p in chapter_paths
@@ -104,15 +111,15 @@ def run_book_quest(
             or any(not isinstance(i, int) for i in prior_skipped)
         ):
             raise ValueError("book quest: resume state has bad M5 counters")
-    os.makedirs(outdir, exist_ok=True)
     book = merge_graphs(v1s, list(names))
-    with open(os.path.join(outdir, "book-graph.json"), "w", encoding="utf-8") as f:
-        json.dump(book, f, indent=1, sort_keys=True)
-        f.write("\n")
     beats, info = author_beats(book)
     issues = validate(beats)
     if issues:
         raise RuntimeError(f"internal error: authored beats invalid: {issues}")
+    os.makedirs(outdir, exist_ok=True)
+    with open(os.path.join(outdir, "book-graph.json"), "w", encoding="utf-8") as f:
+        json.dump(book, f, indent=1, sort_keys=True)
+        f.write("\n")
     save_beats(beats, os.path.join(outdir, "beats.json"))
     store_path = os.path.join(outdir, "xapi.jsonl")
     if os.path.exists(store_path) and restore is None:
