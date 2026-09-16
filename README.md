@@ -29,6 +29,12 @@ keys by default, deterministic (same input = byte-identical output).
   quest in one `gramophone-m6` command. Pure orchestration over M1+M5
   (zero modification). See `docs/M6_PRD.md`,
   `docs/M6_ARCHITECTURE.md`, `M6-REPORT.md`.
+- **M7** (ship it): Mock cassettes bundled into the package (pip-install
+  safe), `gramophone m6` unified route, and a test-verified
+  `TUTORIAL.md`. See `docs/M7_PRD.md`, `docs/M7_ARCHITECTURE.md`,
+  `M7-REPORT.md`.
+
+New here? Start with **TUTORIAL.md** — first quest in 5 minutes.
 
 LLM access goes through one interface (`gramophone_m1.llm_client`):
 `MockLLM` (deterministic cassettes, default, offline) and `GeminiFlashLLM`
@@ -62,7 +68,7 @@ gramophone quest fixtures/chapter_a.json fixtures/chapter_b.json --responses fix
 # M6: raw chapter -> quest, the whole product in one command
 gramophone-m6 fixtures/sample_chapter.md --responses fixtures/m6_responses.txt --out out/full
 
-# Full suite (138 tests, M1+M2+M3+M4+M5+M6)
+# Full suite (144 tests, M1-M7)
 python3 -m pytest tests/ -q -o addopts=''
 ```
 
