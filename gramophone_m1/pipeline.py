@@ -26,11 +26,14 @@ MAX_ITEMS_LIMIT = 2000
 
 
 def default_cassette_path() -> str:
-    """Bundled default cassette (sibling of the package) or env override."""
+    """Default cassette: env override, else bundled, else legacy sibling."""
     override = os.environ.get("GRAMOPHONE_CASSETTE")
     if override:
         return override
     here = os.path.dirname(os.path.abspath(__file__))
+    bundled = os.path.join(here, "cassettes", "mock_default.json")
+    if os.path.exists(bundled):
+        return bundled
     return os.path.join(os.path.dirname(here), "cassettes", "mock_default.json")
 
 

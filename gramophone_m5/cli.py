@@ -14,10 +14,11 @@ from gramophone_m1.cli import main as _m1
 from gramophone_m2.cli import main as _m2
 from gramophone_m3.cli import main as _m3
 from gramophone_m4.cli import main as _m4
+from gramophone_m6.cli import main as _m6
 
 from . import bookquest
 
-USAGE = "usage: gramophone {m1|m2|m3|m4|quest} ..."
+USAGE = "usage: gramophone {m1|m2|m3|m4|m6|quest} ..."
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -88,7 +89,8 @@ def quest_main(argv: list[str] | None = None) -> int:
         return 1
 
 
-_STAGES = {"m1": _m1, "m2": _m2, "m3": _m3, "m4": _m4, "quest": quest_main}
+_STAGES = {"m1": _m1, "m2": _m2, "m3": _m3, "m4": _m4, "m6": _m6,
+           "quest": quest_main}
 
 
 def main(argv: list[str] | None = None) -> int:
