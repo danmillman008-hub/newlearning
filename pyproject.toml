@@ -4,19 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gramophone"
-version = "0.4.0"
-description = "Local-first textbook-to-quest engine: M1 graph, M2 story, M3 scale+play, M4 adaptive quests"
+version = "0.5.0"
+description = "Local-first textbook-to-quest engine: M1 graph, M2 story, M3 scale+play, M4 adaptive quests, M5 book quest"
 requires-python = ">=3.11"
 dependencies = ["pypdf>=4"]
 
 [project.scripts]
+gramophone = "gramophone_m5.cli:main"
 gramophone-m1 = "gramophone_m1.cli:main"
 gramophone-m2 = "gramophone_m2.cli:main"
 gramophone-m3 = "gramophone_m3.cli:main"
 gramophone-m4 = "gramophone_m4.cli:main"
+gramophone-m5 = "gramophone_m5.cli:quest_main"
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
 
 [tool.setuptools.packages.find]
-include = ["gramophone_m1*", "gramophone_m2*", "gramophone_m3*", "gramophone_m4*"]
+include = ["gramophone_m1*", "gramophone_m2*", "gramophone_m3*", "gramophone_m4*", "gramophone_m5*"]
