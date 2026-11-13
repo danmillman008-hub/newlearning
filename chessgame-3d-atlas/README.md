@@ -2,14 +2,23 @@
 
 ## دسترسی سریع
 
-- 🔭 **اجرای زنده (بدون نصب):**
-  https://raw.githack.com/danmillman008-hub/newlearning/arena/345fe9e3-newlearning/chessgame-3d-atlas/ChessGame-3D-Atlas.html
-- 📦 **صفحهٔ فایل در گیت‌هاب:**
-  https://github.com/danmillman008-hub/newlearning/blob/arena/345fe9e3-newlearning/chessgame-3d-atlas/ChessGame-3D-Atlas.html
-- ⬇️ **دانلود مستقیم:** دکمهٔ *Download raw file* در همان صفحه، یا `git clone` و باز کردن `chessgame-3d-atlas/ChessGame-3D-Atlas.html`
+فایل روی همین مخزن آپلود شده است (متغیر برنچ را با برنچ دلخواه عوض کنید):
 
-> فایل کاملاً خودکفاست: هیچ asset نسبی، فونت، worker یا درخواست شبکه‌ای ندارد،
-> پس هم از دیسک (دابل‌کلیک) و هم از روی CDN کار می‌کند.
+- 📦 **صفحهٔ فایل:** `https://github.com/danmillman008-hub/newlearning/blob/arena/345fe9e3-newlearning/chessgame-3d-atlas/ChessGame-3D-Atlas.html`
+- ⬇️ **دانلود مستقیم:** دکمهٔ *Download raw file* در همان صفحه، یا:
+
+```bash
+git clone --branch arena/345fe9e3-newlearning \
+  https://github.com/danmillman008-hub/newlearning.git
+cd newlearning/chessgame-3d-atlas
+# ChessGame-3D-Atlas.html را دابل‌کلیک کنید
+```
+
+- 🔭 **اجرای زنده بدون نصب:** پس از merge شدن این پوشه در برنچ `main`، در
+  *Settings → Pages* مخزن گزینهٔ **Deploy from a branch → main / root** را فعال کنید؛
+  آدرس `https://danmillman008-hub.github.io/newlearning/chessgame-3d-atlas/` خواهد بود.
+  (در حالت فعلی توکن این سشن اجازهٔ فعال‌سازی Pages را ندارد — ۴۰۳.)
+  تا آن زمان، اجرای زنده با `python3 serve.py --port 8080` یا دابل‌کلیک روی فایل کار می‌کند.
 
 ## فایل تحویلی
 
