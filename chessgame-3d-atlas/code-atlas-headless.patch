@@ -1,0 +1,168 @@
+diff --git a/src/main/analyzer/import-resolver.ts b/src/main/analyzer/import-resolver.ts
+index e914fb1..1f686bd 100644
+--- a/src/main/analyzer/import-resolver.ts
++++ b/src/main/analyzer/import-resolver.ts
+@@ -45,7 +45,11 @@ export class ImportResolver {
+     return undefined
+   }
+ 
++  /** set when the last resolve() returned a wildcard/package-wide match */
++  weak = false
++
+   resolve(importerPath: string, language: string, spec: string): FileId[] {
++    this.weak = false
+     switch (language) {
+       case 'javascript':
+       case 'typescript':
+@@ -174,10 +178,30 @@ export class ImportResolver {
+ 
+   private resolveJava(spec: string): FileId[] {
+     const rel = spec.split('.').join('/') + '.java'
+-    for (const root of ['src/main/java/', 'src/', 'app/src/main/java/', '']) {
++    const roots = ['src/main/java/', 'src/', 'app/src/main/java/', '']
++    for (const root of roots) {
+       const hit = this.lookup(normalize(root + rel))
+       if (hit !== undefined) return [hit]
+     }
++    // `import pkg.*;` — a wildcard pulls in the whole package, and a Java
++    // package is a directory, so resolve it the way resolveGo does: every
++    // .java file living in that directory. The capture hands us the scoped
++    // identifier without the `.*`, so a package name is all we have here.
++    const segs = spec.split('.').filter(Boolean)
++    for (let take = Math.min(segs.length, 4); take >= 1; take--) {
++      const suffix = segs.slice(-take).join('/')
++      for (const root of roots) {
++        const dir = normalize(root ? root.replace(/\/$/, '') + '/' + suffix : suffix)
++        const files = this.input.filesInDir.get(dir)
++        if (files?.length) {
++          const java = files.filter((f) => this.input.filePaths[f].endsWith('.java')).slice(0, 40)
++          // a wildcard is a real dependency, but a loose one: keep these out of
++          // the call-graph neighbourhood so refs don't resolve to the wrong file
++          if (java.length) this.weak = true
++          return java
++        }
++      }
++    }
+     return []
+   }
+ }
+diff --git a/src/main/analyzer/queries/index.ts b/src/main/analyzer/queries/index.ts
+index b492438..01db877 100644
+--- a/src/main/analyzer/queries/index.ts
++++ b/src/main/analyzer/queries/index.ts
+@@ -172,6 +172,11 @@ export const QUERIES: Record<string, string> = {
+ (binary_expression operator: "&&") @cx
+ (binary_expression operator: "||") @cx
+ (import_declaration (scoped_identifier) @import.source)
++; a wildcard package import parses as (import_declaration (identifier)
++; (asterisk)) — the scoped_identifier rule above never fires for it. Capturing
++; the bare identifier yields the package name, which resolveJava expands to the
++; package's files.
++(import_declaration (identifier) @import.source)
+ 
+ (class_declaration name: (identifier) @def.class)
+ (interface_declaration name: (identifier) @def.type)
+diff --git a/src/renderer/src/scene/SceneManager.ts b/src/renderer/src/scene/SceneManager.ts
+index a5281a2..3fa0dc1 100644
+--- a/src/renderer/src/scene/SceneManager.ts
++++ b/src/renderer/src/scene/SceneManager.ts
+@@ -528,8 +528,12 @@ export class SceneManager {
+     this.minimapCam.updateProjectionMatrix()
+   }
+ 
++  /** galaxy bounds are only meaningful once the force layout has run */
++  private galaxyFramePending = false
++
+   private applyMode(mode: ViewMode): void {
+     this.world.setMode(mode)
++    if (mode === 'galaxy') this.galaxyFramePending = true
+     if (mode !== 'molecule') {
+       this.molecule.hide()
+       this.applyWorldScale()
+@@ -606,6 +610,17 @@ export class SceneManager {
+     this.molecule.update(dt, this.rig.camera)
+     this.pick()
+ 
++    // same for the galaxy: the first frame lands before the force layout has
++    // posted positions, so the camera would fit the (stale) city extents
++    if (this.galaxyFramePending && state.mode === 'galaxy' && this.world.galaxySettled) {
++      this.galaxyFramePending = false
++      const gb = this.world.getBounds()
++      this.rig.frameSphere(gb.center, gb.radius, {
++        direction: GALAXY_DIR,
++        duration: 0.9
++      })
++    }
++
+     // one gentle re-frame when the molecule layout has fully settled
+     if (
+       state.mode === 'molecule' &&
+diff --git a/src/renderer/src/scene/WorldLayer.ts b/src/renderer/src/scene/WorldLayer.ts
+index 48af511..1a4021b 100644
+--- a/src/renderer/src/scene/WorldLayer.ts
++++ b/src/renderer/src/scene/WorldLayer.ts
+@@ -14,6 +14,7 @@ const MAX_BASE_EDGES = 4000
+ const GALAXY_RADIUS = 420
+ // centered galaxy floats above the ground plane
+ const GALAXY_Y = GALAXY_RADIUS * 0.75
++
+ const NEAR_LABEL_POOL = 40
+ 
+ interface WorldUniforms {
+@@ -70,6 +71,10 @@ export class WorldLayer {
+   private dTgtScale!: Float32Array
+ 
+   private mode: ViewMode = 'city'
++  /** the force layout has posted its final frame */
++  galaxySettled = false
++  /** 75th-percentile node radius of the current layout; outlier clamp */
++  private galaxySoftR = GALAXY_RADIUS
+   private settled = false
+   /** 0 = city look, 1 = galaxy look; smoothed */
+   private galaxyBlend = 0
+@@ -465,10 +470,22 @@ export class WorldLayer {
+     }
+     this.worker?.terminate()
+     this.worker = new ForceWorker()
++    this.galaxySettled = false
+     this.worker.onmessage = (e: MessageEvent<{ positions: Float32Array; done: boolean }>) => {
+       this.galaxyPos = e.data.positions
++      const radii = new Float32Array(n)
++      for (let i = 0; i < n; i++) {
++        radii[i] = Math.hypot(
++          e.data.positions[i * 3],
++          e.data.positions[i * 3 + 1],
++          e.data.positions[i * 3 + 2]
++        )
++      }
++      const sorted = Array.from(radii).sort((a, b) => a - b)
++      this.galaxySoftR = Math.max(25, sorted[Math.floor((n - 1) * 0.75)] ?? GALAXY_RADIUS)
+       if (this.mode === 'galaxy') this.applyModeTargets()
+       if (e.data.done) {
++        this.galaxySettled = true
+         this.worker?.terminate()
+         this.worker = null
+       }
+@@ -538,9 +555,19 @@ export class WorldLayer {
+     this.galaxyBlendTarget = galaxy ? 1 : 0
+     if (galaxy && this.galaxyPos) {
+       for (let i = 0; i < n; i++) {
+-        this.tgtPos[i * 3] = this.galaxyPos[i * 3]
+-        this.tgtPos[i * 3 + 1] = this.galaxyPos[i * 3 + 1] + GALAXY_Y
+-        this.tgtPos[i * 3 + 2] = this.galaxyPos[i * 3 + 2]
++        // files with no import edges are only held by the cluster attraction, so
++        // the charge force parks them out at the simulation rim; a handful of them
++        // then sets the framing radius and shrinks the populated core to specks.
++        // Pull anything past the 75th-percentile radius back to it instead — the
++        // stragglers stay visible as stragglers without owning the view.
++        const gx = this.galaxyPos[i * 3]
++        const gy = this.galaxyPos[i * 3 + 1]
++        const gz = this.galaxyPos[i * 3 + 2]
++        const r = Math.sqrt(gx * gx + gy * gy + gz * gz)
++        const k = r > this.galaxySoftR ? this.galaxySoftR / r : 1
++        this.tgtPos[i * 3] = gx * k
++        this.tgtPos[i * 3 + 1] = gy * k + GALAXY_Y
++        this.tgtPos[i * 3 + 2] = gz * k
+         const s = 1.2 + Math.sqrt(Math.max(1, this.snapshot.files[i].loc)) * 0.28
+         this.tgtScale[i * 3] = s
+         this.tgtScale[i * 3 + 1] = s
