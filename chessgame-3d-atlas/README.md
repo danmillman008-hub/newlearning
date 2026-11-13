@@ -2,8 +2,14 @@
 
 ## دسترسی سریع
 
-- 🔭 **دموی زنده (GitHub Pages):** https://danmillman008-hub.github.io/chessgame-3d-atlas/
-- 📄 **فایل مستقل:** [`ChessGame-3D-Atlas.html`](./ChessGame-3D-Atlas.html) — دانلود و دابل‌کلیک، بدون اینترنت/نصب/سرور
+- 🔭 **اجرای زنده (بدون نصب):**
+  https://raw.githack.com/danmillman008-hub/newlearning/arena/345fe9e3-newlearning/chessgame-3d-atlas/ChessGame-3D-Atlas.html
+- 📦 **صفحهٔ فایل در گیت‌هاب:**
+  https://github.com/danmillman008-hub/newlearning/blob/arena/345fe9e3-newlearning/chessgame-3d-atlas/ChessGame-3D-Atlas.html
+- ⬇️ **دانلود مستقیم:** دکمهٔ *Download raw file* در همان صفحه، یا `git clone` و باز کردن `chessgame-3d-atlas/ChessGame-3D-Atlas.html`
+
+> فایل کاملاً خودکفاست: هیچ asset نسبی، فونت، worker یا درخواست شبکه‌ای ندارد،
+> پس هم از دیسک (دابل‌کلیک) و هم از روی CDN کار می‌کند.
 
 ## فایل تحویلی
 
